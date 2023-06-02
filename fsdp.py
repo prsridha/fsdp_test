@@ -79,7 +79,7 @@ class FSDPExecutor(Parallelism):
             transforms.ToTensor(),
             transforms.Normalize((0.1307,), (0.3081,))
         ])
-        dataset = datasets.MNIST('./data', train=True, transform=transform)
+        dataset = datasets.MNIST('../data', train=True, transform=transform)
         sampler = DistributedSampler(dataset, rank=rank, num_replicas=self.world_size, shuffle=True)
         dataloader = DataLoader(dataset, batch_size=self.hyperparams["batch_size"], sampler=sampler, pin_memory=True, shuffle=False)
 
