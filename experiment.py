@@ -6,7 +6,8 @@ def main():
     m = MNISTSpec()
     datapath = "../data"
     hyperparams = {
-        "lr": m.param_grid["lr"][1]
+        "lr": m.param_grid["lr"][1],
+        "batch_size": m.param_grid["batch_size"][0]
     }
     model_path = "../models"
 
