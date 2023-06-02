@@ -83,7 +83,7 @@ class FSDPExecutor(Parallelism):
         sampler = DistributedSampler(dataset, rank=rank, num_replicas=self.world_size, shuffle=True)
         dataloader = DataLoader(dataset, batch_size=self.hyperparams["batch_size"], sampler=sampler, pin_memory=True, shuffle=False)
 
-        self.user_train_func(self.parallelize, self.save_checkpoint, self.model_path, dataloader, self.hyperparams, rank)
+        self.user_train_func(self.parallelize, self.save_checkpoint, self.model_path, dataloader, self.hyperparams, rank, self.logger)
 
     def _test(self):
         pass
