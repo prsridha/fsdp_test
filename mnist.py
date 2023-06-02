@@ -37,7 +37,7 @@ class MNISTSpec(TrainingSpec):
     def __init__(self) -> None:
         self.num_epoch = 2
         self.param_grid = {
-            "lr": ["1.0, 0.5"]
+            "lr": ["1.0", "0.5"]
         }
         self.model = mnist_model()
         self.optimizer = optim.Adadelta
