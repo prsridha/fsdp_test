@@ -32,7 +32,7 @@ class FSDPExecutor(Parallelism):
         self.model_path = model_path
         self.hyperparams = hyperparams
         self.user_train_func = user_train_func
-        self.WORLD_SIZE = torch.cuda.device_count()
+        self.world_size = torch.cuda.device_count()
 
         # set optimization parameters
         self.wrap_policy = functools.partial(
@@ -89,7 +89,7 @@ class FSDPExecutor(Parallelism):
         pass
 
     def execute_train(self):
-        mp.spawn(self._train, nprocs=self.WORLD_SIZE, join=True)
+        mp.spawn(self._train, nprocs=self.world_size, join=True)
 
     def execute_test(self):
-        mp.spawn(self._test, nprocs=self.WORLD_SIZE, join=True)
+        mp.spawn(self._test, nprocs=self.world_size, join=True)
