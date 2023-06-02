@@ -6,7 +6,7 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 from torchvision import datasets, transforms
 from torch.distributed.fsdp import CPUOffload
-import torch.utils.data.dataloader as DataLoader
+from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
