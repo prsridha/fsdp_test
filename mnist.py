@@ -47,7 +47,7 @@ class MNISTSpec(TrainingSpec):
         pass
 
     def train(self, parallelize, save_checkpoint, model_filepath, dataloader, hyperparams, device, logger):
-        model = self.Net().to(device)
+        model = mnist_model().to(device)
         model = parallelize(model)
         optimizer = optim.Adadelta(model.parameters(), lr=hyperparams["lr"])
 
