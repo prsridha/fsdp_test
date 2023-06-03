@@ -13,6 +13,7 @@ def main():
 
     f = FSDPExecutor(m.train, datapath, hyperparams, model_path)
     f.execute_train()
+    f.cleanUp()
 
 
 if __name__ == "__main__":
