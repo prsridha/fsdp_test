@@ -52,7 +52,10 @@ class FSDPExecutor(Parallelism):
         dist.init_process_group("nccl", rank=rank, world_size=world_size)
 
     def cleanUp(self):
-        dist.destroy_process_group()
+        try:
+            dist.destroy_process_group()
+        except AssertionError as e:
+            print("Couldn't clean up: ", e)
 
     def parallelize(self, model):
         fsdp_model = FSDP(model, auto_wrap_policy=self.wrap_policy, cpu_offload=self.cpu_offload, device_id=torch.cuda.current_device())
