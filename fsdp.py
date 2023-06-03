@@ -1,4 +1,5 @@
 import os
+import warnings
 
 import torch
 import functools
@@ -44,11 +45,13 @@ class FSDPExecutor(Parallelism):
         os.environ['MASTER_ADDR'] = 'localhost'
         os.environ['MASTER_PORT'] = '12355'
 
+        warnings.filterwarnings("ignore", "torch.distributed._all_gather_base is a private function")
+        warnings.filterwarnings("ignore", "torch.distributed._reduce_scatter_base is a private function")
+
         # initialize the process group
         dist.init_process_group("nccl", rank=rank, world_size=world_size)
 
     def cleanUp(self):
-        dist.barrier()
         dist.destroy_process_group()
 
     def parallelize(self, model):
