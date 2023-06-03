@@ -58,7 +58,7 @@ class FSDPExecutor(Parallelism):
             print("Couldn't clean up: ", e)
 
     def parallelize(self, model):
-        fsdp_model = FSDP(model, auto_wrap_policy=self.wrap_policy, cpu_offload=self.cpu_offload, device_id=torch.cuda.current_device())
+        fsdp_model = FSDP(model, auto_wrap_policy=self.wrap_policy, cpu_offload=self.cpu_offload)
         # apply_activation_checkpointing(
         #     fsdp_model, checkpoint_wrapper_fn=checkpoint_wrapper, check_fn=lambda l: isinstance(l, FSDP))
 
