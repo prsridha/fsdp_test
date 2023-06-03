@@ -8,7 +8,10 @@ class Parallelism:
     def cleanUp():
         pass
 
-    def save(state_dicts):
+    def checkpoint(state_dicts):
+        pass
+
+    def metrics_logger(metrics):
         pass
 
     def parallelize(model):

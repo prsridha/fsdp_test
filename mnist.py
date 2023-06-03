@@ -52,7 +52,6 @@ class MNISTSpec(TrainingSpec):
         optimizer = optim.Adadelta(model.parameters(), lr=hyperparams["lr"])
 
         if os.path.isfile(model_filepath):
-            print("Read saved model")
             checkpoint = torch.load(model_filepath)
             model.load_state_dict(checkpoint["model"])
             optimizer.load_state_dict(checkpoint["optimizer"])
@@ -70,9 +69,11 @@ class MNISTSpec(TrainingSpec):
             ddp_loss[0] += loss.item()
             ddp_loss[1] += len(data)
 
-        logger(ddp_loss, device)
+        logger({
+            "ddp_loss": ddp_loss
+        })
 
         save_checkpoint({
             "model": model.state_dict(),
             "optimizer": optimizer.state_dict()
-        }, device)
+        })

@@ -60,15 +60,14 @@ class FSDPExecutor(Parallelism):
         #     fsdp_model, checkpoint_wrapper_fn=checkpoint_wrapper, check_fn=lambda l: isinstance(l, FSDP))
 
         fsdp_model = FSDP(model)
-
         return fsdp_model
 
-    def save_checkpoint(self, states, rank):
+    def checkpoint(self, states, rank):
         dist.barrier()
         if rank == 0:
             torch.save(states, self.model_path)
 
-    def logger(self, metric, rank):
+    def metrics_logger(self, metric, rank):
         dist.all_reduce(metric, op=dist.ReduceOp.SUM)
         if rank == 0:
             print('Train Epoch: {} \tLoss: {:.6f}'.format(1, metric[0] / metric[1]))
@@ -89,7 +88,9 @@ class FSDPExecutor(Parallelism):
         sampler = DistributedSampler(dataset, rank=rank, num_replicas=self.world_size, shuffle=True)
         dataloader = DataLoader(dataset, batch_size=self.hyperparams["batch_size"], sampler=sampler, pin_memory=True, shuffle=False)
 
-        self.user_train_func(self.parallelize, self.save_checkpoint, self.model_path, dataloader, self.hyperparams, rank, self.logger)
+        checkpoint_func = functools.partial(self.checkpoint, rank=rank)
+        logger_func = functools.partial(self.metrics_logger, rank=rank)
+        self.user_train_func(self.parallelize, checkpoint_func, self.model_path, dataloader, self.hyperparams, rank, logger_func)
 
     def _test(self):
         pass
