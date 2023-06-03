@@ -48,6 +48,7 @@ class FSDPExecutor(Parallelism):
         dist.init_process_group("nccl", rank=rank, world_size=world_size)
 
     def cleanUp(self):
+        dist.barrier()
         dist.destroy_process_group()
 
     def parallelize(self, model):
