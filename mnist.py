@@ -52,7 +52,6 @@ class MNISTSpec(TrainingSpec):
         optimizer = optim.Adadelta(model.parameters(), lr=hyperparams["lr"])
 
         if os.path.isfile(model_filepath):
-            print("Yes came here")
             checkpoint = torch.load(model_filepath)
             model.load_state_dict(checkpoint["model"])
             optimizer.load_state_dict(checkpoint["optimizer"])
@@ -65,7 +64,6 @@ class MNISTSpec(TrainingSpec):
             optimizer.zero_grad()
             output = model(data)
             loss = F.nll_loss(output, target, reduction='sum')
-            print("Got loss - ", loss)
             loss.backward()
             optimizer.step()
             ddp_loss[0] += loss.item()
