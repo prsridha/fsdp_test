@@ -94,7 +94,16 @@ class FSDPExecutor(Parallelism):
 
         checkpoint_func = functools.partial(self.checkpoint, rank=rank)
         logger_func = functools.partial(self.metrics_logger, rank=rank)
+
+        start_event = torch.cuda.Event(enable_timing=True)
+        end_event = torch.cuda.Event(enable_timing=True)
+
+        start_event.record()
         self.user_train_func(self.parallelize, checkpoint_func, self.model_path, dataloader, self.hyperparams, rank, logger_func)
+        end_event.record()
+
+        if rank == 0:
+            print(f"CUDA event elapsed time: {start_event.elapsed_time(end_event) / 1000}sec")
 
     def _test(self):
         pass

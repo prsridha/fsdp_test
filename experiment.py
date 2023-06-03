@@ -18,8 +18,4 @@ def main():
 
 
 if __name__ == "__main__":
-    st = time.time()
     main()
-    en = time.time() - st
-    en = time.strftime("%H:%M:%S", time.gmtime(en))
-    print(en)
