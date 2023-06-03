@@ -52,6 +52,7 @@ class MNISTSpec(TrainingSpec):
         optimizer = optim.Adadelta(model.parameters(), lr=hyperparams["lr"])
 
         if os.path.isfile(model_filepath):
+            print("Read saved model")
             checkpoint = torch.load(model_filepath)
             model.load_state_dict(checkpoint["model"])
             optimizer.load_state_dict(checkpoint["optimizer"])
