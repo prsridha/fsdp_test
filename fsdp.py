@@ -67,10 +67,11 @@ class FSDPExecutor(Parallelism):
         if rank == 0:
             torch.save(states, self.model_path)
 
-    def metrics_logger(self, metric, rank):
-        dist.all_reduce(metric, op=dist.ReduceOp.SUM)
-        if rank == 0:
-            print('Train Epoch: {} \tLoss: {:.6f}'.format(1, metric[0] / metric[1]))
+    def metrics_logger(self, metrics, rank):
+        for k, v in metrics.items():
+            dist.all_reduce(v, op=dist.ReduceOp.SUM)
+            if rank == 0:
+                print('{}:\nEpoch: {} \tLoss: {:.6f}'.format(k, 1, v[0] / v[1]))
 
     def sample(self, model, train_func, data_path):
         pass

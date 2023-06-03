@@ -70,7 +70,7 @@ class MNISTSpec(TrainingSpec):
             ddp_loss[1] += len(data)
 
         logger({
-            "ddp_loss": ddp_loss
+            "Train Loss": ddp_loss
         })
 
         save_checkpoint({
