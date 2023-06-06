@@ -13,8 +13,7 @@ from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from torch.distributed.algorithms._checkpoint.checkpoint_wrapper import (
     apply_activation_checkpointing,
-    checkpoint_wrapper,
-    CheckpointImpl,
+    checkpoint_wrapper
 )
 
 from parallelism import Parallelism
@@ -58,11 +57,9 @@ class FSDPExecutor(Parallelism):
             print("Couldn't clean up: ", e)
 
     def parallelize(self, model):
-        # fsdp_model = FSDP(model, auto_wrap_policy=self.wrap_policy, cpu_offload=self.cpu_offload, device_id=torch.cuda.current_device())
-        # apply_activation_checkpointing(
-        #     fsdp_model, checkpoint_wrapper_fn=checkpoint_wrapper, check_fn=lambda l: isinstance(l, FSDP))
+        fsdp_model = FSDP(model, fsdp_auto_wrap_policy=self.wrap_policy, cpu_offload=self.cpu_offload)
 
-        fsdp_model = FSDP(model)
+        # fsdp_model = FSDP(model)
         return fsdp_model
 
     def checkpoint(self, states, rank):
