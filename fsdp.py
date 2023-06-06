@@ -57,9 +57,8 @@ class FSDPExecutor(Parallelism):
             print("Couldn't clean up: ", e)
 
     def parallelize(self, model):
-        fsdp_model = FSDP(model, fsdp_auto_wrap_policy=self.wrap_policy, cpu_offload=self.cpu_offload)
-
-        # fsdp_model = FSDP(model)
+        # fsdp_model = FSDP(model, fsdp_auto_wrap_policy=self.wrap_policy, cpu_offload=self.cpu_offload)
+        fsdp_model = FSDP(model)
         return fsdp_model
 
     def checkpoint(self, states, rank):
