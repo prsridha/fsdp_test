@@ -1,0 +1,95 @@
+import os
+import warnings
+
+import torch
+import functools
+import torch.distributed as dist
+import torch.multiprocessing as mp
+from torchvision import datasets, transforms
+from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
+from torch.nn.parallel import DistributedDataParallel as DDP
+
+from parallelism import Parallelism
+
+# from pytorch_data import GeneralPytorchDataset
+# TODO: how do handle GeneralPytorchDataset - ditch Sampler, add "gpu" dir names in etl, so that it is already sharded
+# TODO: multiple models - where to pass it - function callbacks
+# TODO: stuff like stepLR - that should happen at the end of every epoch - where does this go?
+
+
+def initialize(rank, world_size):
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '12355'
+
+    warnings.filterwarnings("ignore", "torch.distributed._all_gather_base is a private function")
+    warnings.filterwarnings("ignore", "torch.distributed._reduce_scatter_base is a private function")
+
+    # initialize the process group
+    dist.init_process_group("gloo", rank=rank, world_size=world_size)
+
+
+def cleanUp():
+    dist.destroy_process_group()
+
+
+class DDPExecutor(Parallelism):
+    def __init__(self, user_train_func, datapath, hyperparams, model_path) -> None:
+        super().__init__()
+        self.name = "DDPExecutor"
+        self.datapath = datapath
+        self.model_path = model_path
+        self.hyperparams = hyperparams
+        self.user_train_func = user_train_func
+        self.world_size = torch.cuda.device_count()
+
+    def parallelize(self, model, rank):
+        ddp_model = DDP(model, device_ids=[rank])
+        return ddp_model
+
+    def checkpoint(self, states, rank):
+        dist.barrier()
+        if rank == 0:
+            torch.save(states, self.model_path)
+
+    def metrics_logger(self, metrics, rank):
+        for k, v in metrics.items():
+            dist.all_reduce(v, op=dist.ReduceOp.SUM)
+            if rank == 0:
+                print('{}:\nEpoch: {} \tLoss: {:.6f}'.format(k, 1, v[0] / v[1]))
+
+    def _train(self, rank):
+        initialize(rank, self.world_size)
+        torch.cuda.set_device(rank)
+
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.1307,), (0.3081,))
+        ])
+        dataset = datasets.MNIST('../data', train=True, transform=transform)
+        sampler = DistributedSampler(dataset, rank=rank, num_replicas=self.world_size, shuffle=True)
+        dataloader = DataLoader(dataset, batch_size=self.hyperparams["batch_size"], sampler=sampler, pin_memory=True, shuffle=False)
+
+        checkpoint_func = functools.partial(self.checkpoint, rank=rank)
+        logger_func = functools.partial(self.metrics_logger, rank=rank)
+
+        start_event = torch.cuda.Event(enable_timing=True)
+        end_event = torch.cuda.Event(enable_timing=True)
+
+        start_event.record()
+        self.user_train_func(self.parallelize, checkpoint_func, self.model_path, dataloader, self.hyperparams, rank, logger_func)
+        end_event.record()
+
+        if rank == 0:
+            print(f"CUDA event elapsed time: {start_event.elapsed_time(end_event) / 1000}sec")
+
+        cleanUp()
+
+    def _test(self):
+        pass
+
+    def execute_train(self):
+        mp.spawn(self._train, nprocs=self.world_size, join=True)
+
+    def execute_test(self):
+        mp.spawn(self._test, nprocs=self.world_size, join=True)
