@@ -11,10 +11,6 @@ from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
-from torch.distributed.algorithms._checkpoint.checkpoint_wrapper import (
-    apply_activation_checkpointing,
-    checkpoint_wrapper
-)
 
 from parallelism import Parallelism
 
@@ -22,6 +18,21 @@ from parallelism import Parallelism
 # TODO: how do handle GeneralPytorchDataset - ditch Sampler, add "gpu" dir names in etl, so that it is already sharded
 # TODO: multiple models - where to pass it - function callbacks
 # TODO: stuff like stepLR - that should happen at the end of every epoch - where does this go?
+
+
+def initialize(rank, world_size):
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '12355'
+
+    warnings.filterwarnings("ignore", "torch.distributed._all_gather_base is a private function")
+    warnings.filterwarnings("ignore", "torch.distributed._reduce_scatter_base is a private function")
+
+    # initialize the process group
+    dist.init_process_group("nccl", rank=rank, world_size=world_size)
+
+
+def cleanUp():
+    dist.destroy_process_group()
 
 
 class FSDPExecutor(Parallelism):
@@ -40,22 +51,6 @@ class FSDPExecutor(Parallelism):
         )
         self.cpu_offload = CPUOffload(offload_params=True)
 
-    def initialize(self, rank, world_size):
-        os.environ['MASTER_ADDR'] = 'localhost'
-        os.environ['MASTER_PORT'] = '12355'
-
-        warnings.filterwarnings("ignore", "torch.distributed._all_gather_base is a private function")
-        warnings.filterwarnings("ignore", "torch.distributed._reduce_scatter_base is a private function")
-
-        # initialize the process group
-        dist.init_process_group("nccl", rank=rank, world_size=world_size)
-
-    def cleanUp(self):
-        try:
-            dist.destroy_process_group()
-        except AssertionError as e:
-            print("Couldn't clean up: ", e)
-
     def parallelize(self, model):
         # fsdp_model = FSDP(model, fsdp_auto_wrap_policy=self.wrap_policy, cpu_offload=self.cpu_offload)
         fsdp_model = FSDP(model)
@@ -72,13 +67,9 @@ class FSDPExecutor(Parallelism):
             if rank == 0:
                 print('{}:\nEpoch: {} \tLoss: {:.6f}'.format(k, 1, v[0] / v[1]))
 
-    def sample(self, model, train_func, data_path):
-        pass
-
     def _train(self, rank):
-        self.initialize(rank, self.world_size)
+        initialize(rank, self.world_size)
         torch.cuda.set_device(rank)
-        # data_loader = GeneralPytorchDataset("train", self.datapath)
 
         transform = transforms.Compose([
             transforms.ToTensor(),
@@ -100,6 +91,8 @@ class FSDPExecutor(Parallelism):
 
         if rank == 0:
             print(f"CUDA event elapsed time: {start_event.elapsed_time(end_event) / 1000}sec")
+
+        cleanUp()
 
     def _test(self):
         pass
