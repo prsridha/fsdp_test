@@ -1,4 +1,5 @@
-from fsdp import FSDPExecutor
+# from fsdp import FSDPExecutor
+from ddp import DDPExecutor
 from mnist import MNISTSpec
 
 
@@ -11,7 +12,7 @@ def main():
     }
     model_path = "../models/model1.pt"
 
-    f = FSDPExecutor(m.train, datapath, hyperparams, model_path)
+    f = DDPExecutor(m.train, datapath, hyperparams, model_path)
     f.execute_train()
 
 
